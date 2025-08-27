@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Password Analyzer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+      transition: background 0.4s, color 0.4s;
+    }
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      max-width: 450px;
+      width: 100%;
+      text-align: center;
+      animation: fadeIn 0.8s ease-in-out;
+      transition: background 0.4s, color 0.4s;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+      transition: color 0.4s;
+    }
+    input {
+      padding: 12px;
+      width: 80%;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: background 0.4s, color 0.4s, border 0.4s;
+    }
+    button {
+      padding: 12px 25px;
+      background: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .result {
+      margin-top: 25px;
+      text-align: left;
+      animation: slideUp 0.5s ease-in-out;
+    }
+    .strength-bar {
+      height: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      background: #ddd;
+      overflow: hidden;
+    }
+    .strength-fill {
+      height: 100%;
+      width: 0;
+      transition: width 0.5s ease, background 0.5s ease;
+    }
+    .weak { background: red; }
+    .moderate { background: orange; }
+    .strong { background: green; }
+    .very-strong { background: gold; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Dark mode styles */
+    body.dark {
+      background: linear-gradient(135deg, #1e1e1e, #121212);
+      color: #eee;
+    }
+    body.dark .container {
+      background: #1f1f1f;
+      color: #eee;
+    }
+    body.dark h2 {
+      color: #eee;
+    }
+    body.dark input {
+      background: #2c2c2c;
+      color: #eee;
+      border: 1px solid #444;
+    }
+    body.dark button {
+      background: #bb86fc;
+    }
+    body.dark button:hover {
+      background: #9b5de5;
+    }
+
+    .dark-toggle {
+      margin-bottom: 15px;
+      background: transparent;
+      border: 1px solid #aaa;
+      color: inherit;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s ease;
+    }
+    .dark-toggle:hover {
+      background: rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button class="dark-toggle" type="button" onclick="toggleDarkMode()">🌙 Toggle Dark Mode</button>
+    <h2>Password Strength Analyzer</h2>
+    <form method="POST">
+      <input type="password" name="password" placeholder="Enter password" required><br>
+      <button type="submit">Analyze</button>
+    </form>
+
+    {% if result %}
+    <div class="result">
+      <h3>Results</h3>
+
+      <!-- Strength Bar -->
+      <div class="strength-bar">
+        <div class="strength-fill
+          {% if result.rating == 'Weak' %} weak {% endif %}
+          {% if result.rating == 'Moderate' %} moderate {% endif %}
+          {% if result.rating == 'Strong' %} strong {% endif %}
+          {% if result.rating == 'Very Strong' %} very-strong {% endif %}"
+          style="width:
+            {% if result.rating == 'Weak' %}25%
+            {% elif result.rating == 'Moderate' %}50%
+            {% elif result.rating == 'Strong' %}75%
+            {% elif result.rating == 'Very Strong' %}100%
+            {% endif %}">
+        </div>
+      </div>
+
+      <p><b>Rating:</b> {{ result.rating }}</p>
+      <p><b>Entropy:</b> {{ result.entropy }} bits</p>
+      <p><b>Breach Check:</b> {{ result.breach }}</p>
+
+      {% if result.feedback and result.feedback|length > 0 %}
+      <ul>
+        {% for fb in result.feedback %}
+          <li>{{ fb }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <script>
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("darkMode", document.body.classList.contains("dark"));
+    }
+
+    // Load preference
+    window.onload = function() {
+      if (localStorage.getItem("darkMode") === "true") {
+        document.body.classList.add("dark");
+      }
+    }
+  </script>
+</body>
+</html>
