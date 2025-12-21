@@ -63,15 +63,13 @@
       background: #ddd;
       overflow: hidden;
     }
-    .strength-fill {
-      height: 100%;
-      width: 0;
-      transition: width 0.5s ease, background 0.5s ease;
-    }
-    .weak { background: red; }
-    .moderate { background: orange; }
-    .strong { background: green; }
-    .very-strong { background: gold; }
+    .strength-fill { height: 10px; transition: width .25s ease; background: #ddd; border-radius: 4px; }
+
+    /* rating -> widths */
+    .strength-fill.weak { width: 25%; background: #e74c3c; }
+    .strength-fill.moderate { width: 50%; background: #f39c12; }
+    .strength-fill.strong { width: 75%; background: #2ecc71; }
+    .strength-fill.very-strong { width: 100%; background: #27ae60; }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
@@ -137,22 +135,28 @@
 
       <!-- Strength Bar -->
       <div class="strength-bar">
-        <div class="strength-fill
-          {% if result.rating == 'Weak' %} weak {% endif %}
-          {% if result.rating == 'Moderate' %} moderate {% endif %}
-          {% if result.rating == 'Strong' %} strong {% endif %}
-          {% if result.rating == 'Very Strong' %} very-strong {% endif %}"
-          style="width:
-            {% if result.rating == 'Weak' %}25%
-            {% elif result.rating == 'Moderate' %}50%
-            {% elif result.rating == 'Strong' %}75%
-            {% elif result.rating == 'Very Strong' %}100%
-            {% endif %}">
-        </div>
+        <div class="strength-fill {{ result.rating|lower|replace(' ', '-') }}"></div>
       </div>
 
       <p><b>Rating:</b> {{ result.rating }}</p>
       <p><b>Entropy:</b> {{ result.entropy }} bits</p>
+      <div style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+      <p style="margin: 5px 0;"><b>⏱️ Crack Time (Offline):</b> {{ result.crack_time }}</p>
+      <p style="margin: 5px 0; font-size: 0.9em; color: #666;">
+      <b>Fast GPU Attack:</b> {{ result.crack_time_fast }}
+      </p>
+      </div>
+
+      {% if result.pattern_penalties and result.pattern_penalties|length > 0 %}
+      <div style="margin: 10px 0; padding: 10px; background: #fff3cd; border-radius: 5px;">
+      <p style="margin: 5px 0; font-weight: bold;">⚠️ Pattern Penalties:</p>
+      <ul style="margin: 5px 0; padding-left: 20px;">
+      {% for penalty_type, penalty_value in result.pattern_penalties %}
+      <li>{{ penalty_type }}: -{{ penalty_value }} bits</li>
+      {% endfor %}
+      </ul>
+      </div>
+      {% endif %}
       <p><b>Breach Check:</b> {{ result.breach }}</p>
 
       {% if result.feedback and result.feedback|length > 0 %}
