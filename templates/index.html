@@ -1,46 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Password Analyzer</title>
+  <meta charset="UTF-8" />
+  <title>Password Strength Analyzer</title>
+
   <style>
+    /* ================= Base Layout ================= */
+
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #667eea, #764ba2);
       min-height: 100vh;
+      margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 0;
       transition: background 0.4s, color 0.4s;
     }
+
     .container {
-      background: #fff;
+      background: #ffffff;
       padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-      max-width: 450px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      max-width: 460px;
       width: 100%;
       text-align: center;
       animation: fadeIn 0.8s ease-in-out;
       transition: background 0.4s, color 0.4s;
     }
+
     h2 {
       margin-bottom: 20px;
       color: #333;
       transition: color 0.4s;
     }
-    input {
-      padding: 12px;
-      width: 80%;
-      margin-bottom: 15px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 16px;
-      transition: background 0.4s, color 0.4s, border 0.4s;
+
+    h3 {
+      margin-top: 20px;
+      color: #333;
     }
+
+    /* ================= Inputs & Buttons ================= */
+
+    input {
+      width: 80%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      transition: background 0.3s, color 0.3s, border 0.3s;
+    }
+
     button {
-      padding: 12px 25px;
-      background: #007BFF;
+      padding: 12px 26px;
+      background: #007bff;
       color: white;
       border: none;
       border-radius: 8px;
@@ -48,60 +63,9 @@
       font-size: 16px;
       transition: background 0.3s ease;
     }
+
     button:hover {
       background: #0056b3;
-    }
-    .result {
-      margin-top: 25px;
-      text-align: left;
-      animation: slideUp 0.5s ease-in-out;
-    }
-    .strength-bar {
-      height: 10px;
-      border-radius: 5px;
-      margin: 10px 0;
-      background: #ddd;
-      overflow: hidden;
-    }
-    .strength-fill { height: 10px; transition: width .25s ease; background: #ddd; border-radius: 4px; }
-
-    /* rating -> widths */
-    .strength-fill.weak { width: 25%; background: #e74c3c; }
-    .strength-fill.moderate { width: 50%; background: #f39c12; }
-    .strength-fill.strong { width: 75%; background: #2ecc71; }
-    .strength-fill.very-strong { width: 100%; background: #27ae60; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Dark mode styles */
-    body.dark {
-      background: linear-gradient(135deg, #1e1e1e, #121212);
-      color: #eee;
-    }
-    body.dark .container {
-      background: #1f1f1f;
-      color: #eee;
-    }
-    body.dark h2 {
-      color: #eee;
-    }
-    body.dark input {
-      background: #2c2c2c;
-      color: #eee;
-      border: 1px solid #444;
-    }
-    body.dark button {
-      background: #bb86fc;
-    }
-    body.dark button:hover {
-      background: #9b5de5;
     }
 
     .dark-toggle {
@@ -109,23 +73,139 @@
       background: transparent;
       border: 1px solid #aaa;
       color: inherit;
-      padding: 5px 10px;
+      padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
       font-size: 14px;
-      transition: background 0.3s ease;
     }
-    .dark-toggle:hover {
-      background: rgba(0,0,0,0.1);
+
+    /* ================= Results ================= */
+
+    .result {
+      margin-top: 25px;
+      text-align: left;
+      animation: slideUp 0.5s ease-in-out;
+    }
+
+    .strength-bar {
+      height: 10px;
+      border-radius: 5px;
+      background: #ddd;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .strength-fill {
+      height: 100%;
+      border-radius: 5px;
+      transition: width 0.3s ease;
+    }
+
+    .strength-fill.weak { width: 25%; background: #e74c3c; }
+    .strength-fill.moderate { width: 50%; background: #f39c12; }
+    .strength-fill.strong { width: 75%; background: #2ecc71; }
+    .strength-fill.very-strong { width: 100%; background: #27ae60; }
+
+    /* ================= Cards ================= */
+
+    .info-card {
+      margin: 15px 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: #f8f9fa;
+      color: #333;
+    }
+
+    .warning-card {
+      margin: 12px 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .muted-text {
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    ul {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    /* ================= Animations ================= */
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ================= Dark Mode ================= */
+
+    body.dark {
+      background: linear-gradient(135deg, #1e1e1e, #121212);
+      color: #eee;
+    }
+
+    body.dark .container {
+      background: #1f1f1f;
+      color: #eee;
+    }
+
+    body.dark h2,
+    body.dark h3 {
+      color: #eee;
+    }
+
+    body.dark input {
+      background: #2c2c2c;
+      color: #eee;
+      border: 1px solid #444;
+    }
+
+    body.dark button {
+      background: #bb86fc;
+    }
+
+    body.dark button:hover {
+      background: #9b5de5;
+    }
+
+    body.dark .info-card {
+      background: #2a2a2a;
+      color: #eee;
+    }
+
+    body.dark .warning-card {
+      background: #3a2f15;
+      color: #ffdd88;
+    }
+
+    body.dark .muted-text {
+      color: #aaa;
     }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <button class="dark-toggle" type="button" onclick="toggleDarkMode()">🌙 Toggle Dark Mode</button>
+    <button class="dark-toggle" onclick="toggleDarkMode()">🌙 Toggle Dark Mode</button>
+
     <h2>Password Strength Analyzer</h2>
+
     <form method="POST">
-      <input type="password" name="password" placeholder="Enter password" required><br>
+      <input type="password" name="password" placeholder="Enter password" required />
+      <br />
       <button type="submit">Analyze</button>
     </form>
 
@@ -133,36 +213,35 @@
     <div class="result">
       <h3>Results</h3>
 
-      <!-- Strength Bar -->
       <div class="strength-bar">
         <div class="strength-fill {{ result.rating|lower|replace(' ', '-') }}"></div>
       </div>
 
       <p><b>Rating:</b> {{ result.rating }}</p>
       <p><b>Entropy:</b> {{ result.entropy }} bits</p>
-      <div style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-      <p style="margin: 5px 0;"><b>⏱️ Crack Time (Offline):</b> {{ result.crack_time }}</p>
-      <p style="margin: 5px 0; font-size: 0.9em; color: #666;">
-      <b>Fast GPU Attack:</b> {{ result.crack_time_fast }}
-      </p>
+
+      <div class="info-card">
+        <p><b>⏱️ Crack Time (Offline):</b> {{ result.crack_time }}</p>
+        <p class="muted-text"><b>Fast GPU Attack:</b> {{ result.crack_time_fast }}</p>
       </div>
 
-      {% if result.pattern_penalties and result.pattern_penalties|length > 0 %}
-      <div style="margin: 10px 0; padding: 10px; background: #fff3cd; border-radius: 5px;">
-      <p style="margin: 5px 0; font-weight: bold;">⚠️ Pattern Penalties:</p>
-      <ul style="margin: 5px 0; padding-left: 20px;">
-      {% for penalty_type, penalty_value in result.pattern_penalties %}
-      <li>{{ penalty_type }}: -{{ penalty_value }} bits</li>
-      {% endfor %}
-      </ul>
+      {% if result.pattern_penalties %}
+      <div class="warning-card">
+        <p><b>⚠️ Pattern Penalties:</b></p>
+        <ul>
+          {% for penalty_type, penalty_value in result.pattern_penalties %}
+          <li>{{ penalty_type }}: -{{ penalty_value }} bits</li>
+          {% endfor %}
+        </ul>
       </div>
       {% endif %}
+
       <p><b>Breach Check:</b> {{ result.breach }}</p>
 
-      {% if result.feedback and result.feedback|length > 0 %}
+      {% if result.feedback %}
       <ul>
         {% for fb in result.feedback %}
-          <li>{{ fb }}</li>
+        <li>{{ fb }}</li>
         {% endfor %}
       </ul>
       {% endif %}
@@ -176,12 +255,11 @@
       localStorage.setItem("darkMode", document.body.classList.contains("dark"));
     }
 
-    // Load preference
-    window.onload = function() {
+    window.onload = function () {
       if (localStorage.getItem("darkMode") === "true") {
         document.body.classList.add("dark");
       }
-    }
+    };
   </script>
 </body>
 </html>
