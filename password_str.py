@@ -39,6 +39,145 @@ def load_dictionary(path="dictionary.txt"):
 dictionary_words = load_dictionary()
 
 # -------------------------------
+# Adaptive Feedback Helper Functions
+# -------------------------------
+def analyze_number_placement(password):
+    """Analyze where numbers are placed in the password"""
+    if not re.search(r"[0-9]", password):
+        return None
+    
+    # Check if numbers are only at the end
+    if re.search(r'^[^0-9]+[0-9]+$', password):
+        return "end"
+    # Check if numbers are only at the beginning
+    elif re.search(r'^[0-9]+[^0-9]+$', password):
+        return "start"
+    else:
+        return "mixed"
+
+def analyze_symbol_placement(password):
+    """Analyze where symbols are placed in the password"""
+    if not re.search(r"[^a-zA-Z0-9]", password):
+        return None
+    
+    # Check if symbols are only at the end
+    if re.search(r'^[a-zA-Z0-9]+[^a-zA-Z0-9]+$', password):
+        return "end"
+    # Check if symbols are only at the beginning
+    elif re.search(r'^[^a-zA-Z0-9]+[a-zA-Z0-9]+$', password):
+        return "start"
+    else:
+        return "mixed"
+
+def analyze_case_pattern(password):
+    """Analyze capitalization patterns"""
+    if not re.search(r"[a-zA-Z]", password):
+        return None
+    
+    # Check if only first letter is capitalized
+    if re.match(r'^[A-Z][a-z]*', password) and not re.search(r'[A-Z]', password[1:]):
+        return "first_only"
+    # Check if all caps
+    elif password.isupper():
+        return "all_caps"
+    # Check if alternating
+    elif re.search(r'([a-z][A-Z]|[A-Z][a-z]){2,}', password):
+        return "alternating"
+    else:
+        return "mixed"
+
+def get_adaptive_feedback(password, has_lower, has_upper, has_digit, has_symbol, length):
+    """
+    Generate adaptive, context-aware feedback that explains vulnerabilities
+    and provides actionable guidance.
+    """
+    feedback = []
+    
+    # Length analysis with context
+    if length < 8:
+        feedback.append(
+            "❌ Too short (< 8 characters): Attackers can try every possible combination "
+            "in seconds with modern hardware. Aim for at least 12 characters to make "
+            "brute-force attacks computationally infeasible."
+        )
+    elif length < 12:
+        feedback.append(
+            "⚠️ Length could be stronger: While 8+ characters meet minimum requirements, "
+            "12+ characters dramatically increase crack time. Each additional character "
+            "multiplies the search space attackers must explore."
+        )
+    
+    # Analyze number placement
+    num_placement = analyze_number_placement(password)
+    if not has_digit:
+        feedback.append(
+            "❌ Missing numbers: Passwords without digits have a smaller character set, "
+            "reducing entropy. However, don't just add '123' or '1' at the end—attackers "
+            "expect this. Instead, insert digits throughout the password (e.g., 'h3llo' or 'pass7word9')."
+        )
+    elif num_placement == "end":
+        feedback.append(
+            "⚠️ Numbers only at the end: Attackers use 'append rules' that automatically "
+            "try adding digits 0-999 to the end of common words. Try scattering numbers "
+            "throughout: 'pa5sword' instead of 'password5'."
+        )
+    elif num_placement == "start":
+        feedback.append(
+            "⚠️ Numbers only at the beginning: Similar to ending with numbers, prepending "
+            "digits is a common pattern attackers exploit. Distribute numbers throughout "
+            "the password for better security."
+        )
+    
+    # Analyze symbol placement
+    sym_placement = analyze_symbol_placement(password)
+    if not has_symbol:
+        feedback.append(
+            "❌ Missing special characters: Adding symbols ($, @, !, etc.) increases "
+            "the character pool and entropy. But avoid predictable substitutions like "
+            "'@' for 'a' or '!' at the end. Try weaving symbols naturally: 'my$ecret#pass'."
+        )
+    elif sym_placement == "end":
+        feedback.append(
+            "⚠️ Symbol only at the end: Appending '!' or '!' is extremely common—cracking "
+            "tools specifically check for this. Place symbols in the middle or use multiple "
+            "symbols in different positions."
+        )
+    elif sym_placement == "start":
+        feedback.append(
+            "⚠️ Symbol only at the beginning: Starting with a symbol is less common than "
+            "ending with one, but still predictable. Mix symbols throughout for stronger security."
+        )
+    
+    # Analyze case patterns
+    case_pattern = analyze_case_pattern(password)
+    if not has_lower and not has_upper:
+        pass  # No letters at all - handled elsewhere
+    elif not has_upper:
+        feedback.append(
+            "❌ All lowercase: Passwords without uppercase letters are easier to crack "
+            "because the search space is smaller. Add capitals, but not just the first letter—"
+            "that's what everyone does. Try: 'passWord' or 'pAsswoRd' instead of 'Password'."
+        )
+    elif not has_lower:
+        feedback.append(
+            "❌ All uppercase: While uncommon, all-caps passwords don't add much security "
+            "and are predictable. Mix uppercase and lowercase unpredictably throughout."
+        )
+    elif case_pattern == "first_only":
+        feedback.append(
+            "⚠️ Only first letter capitalized: This is the default capitalization pattern "
+            "most people use. Cracking tools automatically test this variation first. "
+            "Capitalize letters in unexpected places: 'paSsWord' or 'passWorD'."
+        )
+    elif case_pattern == "all_caps":
+        feedback.append(
+            "⚠️ All capitals: While technically adding complexity, all-caps is easy to "
+            "detect and try. Vary your capitalization naturally."
+        )
+    
+    return feedback
+
+# -------------------------------
 # Pattern Detection Functions
 # -------------------------------
 def detect_repetition(password):
@@ -52,16 +191,24 @@ def detect_repetition(password):
         repeated_char = repeat_pattern.group(1)
         repeat_count = len(repeat_pattern.group(0))
         if repeat_count >= 4:
-            return True, 15, f"Repeated character '{repeated_char}' {repeat_count} times"
+            return (True, 15, 
+                    f"Repeated '{repeated_char}' × {repeat_count}: Repetition drastically reduces "
+                    f"effective password space. Attackers use compression techniques that treat "
+                    f"repeated characters as a single pattern.")
         elif repeat_count == 3:
-            return True, 10, f"Repeated character '{repeated_char}' 3 times"
+            return (True, 10, 
+                    f"Repeated '{repeated_char}' × 3: Even short repetitions are flagged by "
+                    f"pattern-matching attacks. Vary your characters.")
     
     # Check for repeated sequences (e.g., "123123" or "abcabc")
     for length in range(2, len(password) // 2 + 1):
         for i in range(len(password) - length * 2 + 1):
             chunk = password[i:i+length]
             if password[i+length:i+length*2] == chunk:
-                return True, 12, f"Repeated sequence '{chunk}'"
+                return (True, 12, 
+                        f"Repeated sequence '{chunk}': Repeated patterns are detected by "
+                        f"rule-based attacks that specifically look for duplication. Each repeat "
+                        f"makes the password exponentially weaker.")
     
     return False, 0, None
 
@@ -85,9 +232,14 @@ def detect_sequences(password):
                 j += 1
             
             if seq_len >= 4:
-                return True, 15, f"Alphabetic sequence of {seq_len} characters"
+                return (True, 15, 
+                        f"Sequential pattern ({seq_len} chars): Long sequences like 'abcd' or "
+                        f"'defg' appear in cracking dictionaries because they're common typing patterns. "
+                        f"Break sequences with random characters.")
             else:
-                return True, 10, f"Alphabetic sequence '{seq}'"
+                return (True, 10, 
+                        f"Sequential '{seq}': Three-character sequences are easily guessed. "
+                        f"Attackers use 'sequence rules' that automatically generate abc, bcd, xyz, etc.")
     
     # Numeric sequences
     for i in range(len(password) - 2):
@@ -103,9 +255,13 @@ def detect_sequences(password):
                     j += 1
                 
                 if seq_len >= 4:
-                    return True, 15, f"Numeric sequence of {seq_len} digits"
+                    return (True, 15, 
+                            f"Numeric sequence ({seq_len} digits): Sequences like '1234' or '5678' "
+                            f"are among the first patterns attackers try. Use random numbers instead.")
                 else:
-                    return True, 10, f"Numeric sequence '{password[i:i+3]}'"
+                    return (True, 10, 
+                            f"Numeric sequence '{password[i:i+3]}': Consecutive numbers are "
+                            f"predictable. Scatter random digits instead: '1', '9', '4'.")
     
     return False, 0, None
 
@@ -118,10 +274,15 @@ def detect_keyboard_walk(password):
     
     for pattern in KEYBOARD_PATTERNS:
         if pattern in pw_lower:
-            return True, 12, f"Keyboard pattern '{pattern}' detected"
+            return (True, 12, 
+                    f"Keyboard walk '{pattern}': Typing adjacent keys ('qwerty', 'asdf') is "
+                    f"a well-known pattern. Cracking tools include keyboard-walk generators that "
+                    f"try all possible paths across the keyboard.")
         # Check reverse
         if pattern[::-1] in pw_lower:
-            return True, 12, f"Reverse keyboard pattern '{pattern[::-1]}' detected"
+            return (True, 12, 
+                    f"Reverse keyboard walk '{pattern[::-1]}': Even reversed keyboard patterns "
+                    f"are in attacker wordlists. Avoid using keyboard positions entirely.")
     
     return False, 0, None
 
@@ -132,22 +293,27 @@ def detect_date_patterns(password):
     """
     date_patterns = [
         # Likely birth years (1950–2049)
-        (r'(19[5-9]\d|20[0-4]\d)', "likely birth year"),
+        (r'(19[5-9]\d|20[0-4]\d)', 
+         "Birth year detected: Years (especially 1960-2000) are extremely common in passwords. "
+         "Attackers prioritize trying birth years, graduation years, and current years. "
+         "Use unrelated numbers instead."),
 
         # Common date formats
-        (r'\b\d{2}[/-]\d{2}[/-]\d{2,4}\b', "date format (DD/MM/YYYY)"),
+        (r'\b\d{2}[/-]\d{2}[/-]\d{2,4}\b', 
+         "Date format detected (DD/MM/YYYY): Formatted dates are easily recognized. "
+         "Attackers use date-pattern generators that try birthdays, anniversaries, and historical dates."),
 
         # Compact YYYYMMDD
         (r'\b(19[5-9]\d|20[0-4]\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\b',
-         "compact date (YYYYMMDD)")
+         "Compact date (YYYYMMDD): This format is checked by specialized date-cracking rules. "
+         "Personal dates are easily researched via social media.")
     ]
 
     for pattern, description in date_patterns:
         if re.search(pattern, password):
-            return True, 8, f"Date pattern detected ({description})"
+            return True, 8, description
 
     return False, 0, None
-
 
 # -------------------------------
 # Calculate entropy
@@ -212,79 +378,81 @@ def estimate_crack_time(entropy, attack_speed=10_000_000_000):
         return "Multiple millennia"
 
 # -------------------------------
-# Enhanced strength check with patterns
+# Enhanced strength check with adaptive feedback
 # -------------------------------
 def check_strength(password):
     strength_points = 0
     feedback = []
     pattern_penalties = []
 
-    # Length check
-    if len(password) < 8:
-        feedback.append("❌ Too short (minimum 8 characters recommended).")
-    else:
+    # Character type checks
+    has_lower = bool(re.search(r"[a-z]", password))
+    has_upper = bool(re.search(r"[A-Z]", password))
+    has_digit = bool(re.search(r"[0-9]", password))
+    has_symbol = bool(re.search(r"[^a-zA-Z0-9]", password))
+    length = len(password)
+
+    # Award points for complexity
+    if length >= 8:
+        strength_points += 1
+    if has_lower:
+        strength_points += 1
+    if has_upper:
+        strength_points += 1
+    if has_digit:
+        strength_points += 1
+    if has_symbol:
         strength_points += 1
 
-    # Complexity checks
-    if re.search(r"[a-z]", password):
-        strength_points += 1
-    else:
-        feedback.append("❌ Add lowercase letters.")
-    
-    if re.search(r"[A-Z]", password):
-        strength_points += 1
-    else:
-        feedback.append("❌ Add uppercase letters.")
-    
-    if re.search(r"[0-9]", password):
-        strength_points += 1
-    else:
-        feedback.append("❌ Add numbers.")
-    
-    if re.search(r"[^a-zA-Z0-9]", password):
-        strength_points += 1
-    else:
-        feedback.append("❌ Add special characters.")
+    # Get adaptive feedback
+    adaptive_feedback = get_adaptive_feedback(
+        password, has_lower, has_upper, has_digit, has_symbol, length
+    )
+    feedback.extend(adaptive_feedback)
 
     # Common password check
     if password.lower() in common_passwords:
-        feedback.append("❌ Your password is a very common one, try something unique.")
+        feedback.append(
+            "❌ Extremely common password: This exact password appears in the top 100 most "
+            "used passwords globally. It will be the first thing attackers try. Create something "
+            "unique that isn't in any password list."
+        )
 
     # Calculate base entropy
     entropy = calculate_entropy(password)
 
-    # Pattern detection and penalties
+    # Pattern detection with enhanced descriptions
     total_pattern_penalty = 0
     
     # Check repetition
     has_rep, rep_penalty, rep_desc = detect_repetition(password)
     if has_rep:
-        feedback.append(f"⚠️ Weak pattern: {rep_desc}")
+        feedback.append(f"⚠️ {rep_desc}")
         pattern_penalties.append(("Repetition", rep_penalty))
         total_pattern_penalty += rep_penalty
     
     # Check sequences
     has_seq, seq_penalty, seq_desc = detect_sequences(password)
     if has_seq:
-        feedback.append(f"⚠️ Weak pattern: {seq_desc}")
+        feedback.append(f"⚠️ {seq_desc}")
         pattern_penalties.append(("Sequence", seq_penalty))
         total_pattern_penalty += seq_penalty
     
     # Check keyboard walks
     has_walk, walk_penalty, walk_desc = detect_keyboard_walk(password)
     if has_walk:
-        feedback.append(f"⚠️ Weak pattern: {walk_desc}")
+        feedback.append(f"⚠️ {walk_desc}")
         pattern_penalties.append(("Keyboard walk", walk_penalty))
         total_pattern_penalty += walk_penalty
     
     # Check date patterns
     has_date, date_penalty, date_desc = detect_date_patterns(password)
     if has_date:
-        feedback.append(f"⚠️ Weak pattern: {date_desc}")
+        feedback.append(f"⚠️ {date_desc}")
         pattern_penalties.append(("Date pattern", date_penalty))
         total_pattern_penalty += date_penalty
 
-    # Dictionary check with longest match
+    # Dictionary check with context
     pw_lower = password.lower()
     longest_match = ""
     for word in dictionary_words:
@@ -292,24 +460,27 @@ def check_strength(password):
             if len(word) > len(longest_match):
                 longest_match = word
 
-    # Dictionary penalties
+    # Dictionary penalties with explanations
     if pw_lower in dictionary_words:
         feedback.append(
-            "❌ Your password is simply a dictionary word. "
-            "Try mixing random letters, numbers, and symbols."
+            f"❌ Extremely common password: '{pw_lower}' appears in common dictionaries. "
+            f"Attackers start with dictionary attacks before trying brute force. "
+            f"Use a passphrase (3-4 random words) or add significant random elements."
         )
         entropy -= 20
     elif longest_match:
         if len(password) <= 6:
             feedback.append(
-                f"❌ Contains dictionary word '{longest_match}'. "
-                "Short word-based passwords are very weak."
+                f"❌ Contains dictionary word '{longest_match}': Short passwords based on words "
+                f"are cracked quickly via 'hybrid attacks' that combine dictionary words with "
+                f"common number/symbol patterns. Use a longer passphrase or completely random password."
             )
             entropy -= 20
         elif len(password) <= 10:
             feedback.append(
-                f"⚠️ Contains dictionary word '{longest_match}'. "
-                "Words reduce unpredictability."
+                f"⚠️ Contains dictionary word '{longest_match}': Dictionary words reduce entropy "
+                f"because attackers use 'combination attacks' that mix common words with variations. "
+                f"Consider using multiple unrelated words or more random characters."
             )
             entropy -= 10
 
@@ -333,6 +504,13 @@ def check_strength(password):
         rating = "Strong"
     else:
         rating = "Very Strong"
+
+    # Add positive feedback for strong passwords
+    if not feedback or (rating in ["Strong", "Very Strong"] and entropy >= 70):
+        feedback.append(
+            "✅ Excellent password strength! This password uses good entropy and "
+            "avoids common patterns. Continue using unique passwords for each account."
+        )
 
     return rating, entropy, feedback, crack_time, crack_time_fast, pattern_penalties
 
@@ -383,8 +561,6 @@ if __name__ == "__main__":
     if feedback:
         for f in feedback:
             print(f"  {f}")
-    else:
-        print("  ✅ Excellent password strength!")
 
     print("\n🔍 Breach Check:")
     print(f"  {check_breach(password)}")
